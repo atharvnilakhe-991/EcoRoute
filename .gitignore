@@ -1,0 +1,28 @@
+# Build and compiled artifacts
+build/
+bin/
+obj/
+.dist/
+*.exe
+*.dll
+*.so
+*.dylib
+*.obj
+*.o
+*.a
+*.lib
+*.idx
+
+# CMake artifacts
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+*.ninja
+.ninja_deps
+.ninja_log
+
+# System & temporary files
+Thumbs.db
+.DS_Store
+*.tmp

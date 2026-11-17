@@ -1,0 +1,12 @@
+CompileFlags:
+  CompilationDatabase: "build"
+  Add:
+    - "--target=x86_64-w64-mingw32"
+    - "-std=c++17"
+    - "-isystemD:/WinLibs/mingw64/include/c++/16.1.0"
+    - "-isystemD:/WinLibs/mingw64/include/c++/16.1.0/x86_64-w64-mingw32"
+    - "-isystemD:/WinLibs/mingw64/include/c++/16.1.0/backward"
+    - "-isystemD:/WinLibs/mingw64/lib/gcc/x86_64-w64-mingw32/16.1.0/include"
+    - "-isystemD:/WinLibs/mingw64/include"
+    - "-isystemD:/WinLibs/mingw64/x86_64-w64-mingw32/include"
+    - "-ID:/Robot/core/include"

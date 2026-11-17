@@ -1,0 +1,1802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot Warehouse Management & Automation OS</title>
+    <meta name="description" content="Commercial-grade Robot Warehouse Automation System powered by C++ OOP core and pathfinding algorithms.">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Header Navigation Bar -->
+    <header>
+        <div class="brand-section">
+            <div class="brand-badge">🤖</div>
+            <div class="brand-text">
+                <h1>WAREHOUSE OS</h1>
+                <p>C++ OOP Core & Intelligent Multi-Robot Fleet</p>
+            </div>
+        </div>
+
+        <!-- Cognify-inspired Navigation Pills -->
+        <nav class="nav-pills" aria-label="Main Navigation">
+            <button class="nav-pill active" data-view="overview" id="navBtnOverview">Overview</button>
+            <button class="nav-pill" data-view="warehouse" id="navBtnWarehouse">Warehouse</button>
+            <button class="nav-pill" data-view="fleet" id="navBtnFleet">Fleet</button>
+            <button class="nav-pill" data-view="orders" id="navBtnOrders">Orders</button>
+            <button class="nav-pill" data-view="inventory" id="navBtnInventory">Inventory</button>
+            <button class="nav-pill" data-view="algorithms" id="navBtnAlgorithms">Algorithms</button>
+            <button class="nav-pill" data-view="ecoroute" id="navBtnEcoRoute">🌱 EcoRoute</button>
+            <button class="nav-pill" data-view="foodsaver" id="navBtnFoodSaver">🥫 FoodSaver</button>
+        </nav>
+
+        <div class="header-status">
+            <div id="connectionBadge" class="status-pill">
+                <span class="indicator-dot"></span> Checking Status...
+            </div>
+            <div id="tickCounter" class="tick-pill">TICK: 0</div>
+        </div>
+    </header>
+
+    <div class="main-wrapper">
+
+        <!-- KPI Metrics Banner -->
+        <section class="kpi-grid" aria-label="Key Performance Indicators">
+            <div class="card kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-title">Active Orders</span>
+                    <div class="kpi-icon-pill blue">📦</div>
+                </div>
+                <div id="kpiActiveOrders" class="kpi-value">0</div>
+                <div class="kpi-subtext">Pending & in-transit deliveries</div>
+            </div>
+
+            <div class="card kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-title">Completed Orders</span>
+                    <div class="kpi-icon-pill green">✓</div>
+                </div>
+                <div id="kpiCompletedOrders" class="kpi-value">0</div>
+                <div class="kpi-subtext">Delivered to packaging stations</div>
+            </div>
+
+            <div class="card kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-title">Available Robots</span>
+                    <div class="kpi-icon-pill purple">🤖</div>
+                </div>
+                <div id="kpiIdleRobots" class="kpi-value">4 / 4</div>
+                <div class="kpi-subtext">Fleet units ready for dispatch</div>
+            </div>
+
+            <div class="card kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-title">Average Battery</span>
+                    <div class="kpi-icon-pill amber">⚡</div>
+                </div>
+                <div id="kpiAvgBattery" class="kpi-value">100%</div>
+                <div class="kpi-subtext">Autonomous charging at ≤ 25%</div>
+            </div>
+        </section>
+
+        <!-- Main Workspace: Canvas & Control Deck -->
+        <main class="workspace-grid">
+
+            <!-- Left: Interactive Canvas Map -->
+            <section class="card canvas-card" aria-label="Warehouse Grid Map">
+                <div class="card-title-bar">
+                    <h2 class="card-title">
+                        <span>🗺️</span> Warehouse Grid Simulation (15×15)
+                    </h2>
+                    <span style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);">
+                        Scale: 1m / cell
+                    </span>
+                </div>
+
+                <!-- Canvas & Tooltip Container -->
+                <div class="canvas-container">
+                    <canvas id="warehouseCanvas"></canvas>
+                    <div id="cellTooltip" class="cell-tooltip"></div>
+                </div>
+
+                <!-- Simulation Toolbar -->
+                <div class="sim-toolbar">
+                    <div class="btn-group">
+                        <button id="btnPlayPause" class="btn btn-primary" title="Toggle Auto-Simulation">
+                            ▶️ Auto-Play
+                        </button>
+                        <button id="btnStep" class="btn btn-secondary" title="Advance 1 Discrete Tick">
+                            ⏭️ Step Tick
+                        </button>
+                        <button id="btnToggleObstacleMode" class="btn btn-secondary" title="Click grid cells to place or remove dynamic obstacles">
+                            🚧 Obstacle Mode: OFF
+                        </button>
+                        <button id="btnReset" class="btn btn-danger" title="Reset Warehouse State">
+                            🔄 Reset
+                        </button>
+                    </div>
+
+                    <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-secondary);">
+                        <label for="speedSlider" style="font-weight:500;">Speed:</label>
+                        <input id="speedSlider" type="range" min="1" max="5" value="2" style="accent-color:var(--accent-primary);cursor:pointer;">
+                        <span id="speedLabel" style="font-family:var(--font-mono);font-size:12px;font-weight:600;">2x (400ms)</span>
+                    </div>
+                </div>
+
+                <!-- PHASE 4 STAGE F: Interactive Congestion Heatmap Toolbar -->
+                <div class="heatmap-toolbar-card" id="heatmapToolbarCard">
+                    <div class="heatmap-controls-row">
+                        <!-- Heatmap Master Toggle -->
+                        <div class="heatmap-toggle-group">
+                            <button id="btnToggleHeatmap" class="btn btn-secondary" style="font-weight:700;display:flex;align-items:center;gap:6px;">
+                                <span id="heatmapIcon">🔥</span> <span id="heatmapToggleText">Heatmap: OFF</span>
+                            </button>
+                        </div>
+
+                        <!-- Heatmap Observation Modes -->
+                        <div class="heatmap-mode-group" id="heatmapModeGroup" role="tablist" aria-label="Heatmap Observation Modes">
+                            <button class="heatmap-mode-btn active" data-mode="visits" role="tab" aria-selected="true" title="Cells with highest robot traversal frequency">
+                                🚶 Visits
+                            </button>
+                            <button class="heatmap-mode-btn" data-mode="waits" role="tab" aria-selected="false" title="Hotspots where robots waited or experienced blocks">
+                                ⏳ Waiting & Blocked
+                            </button>
+                            <button class="heatmap-mode-btn" data-mode="replans" role="tab" aria-selected="false" title="Hotspots where dynamic routes were replanned">
+                                🔀 Replanning
+                            </button>
+                        </div>
+
+                        <!-- Heatmap Legend & Scale -->
+                        <div class="heatmap-legend-wrap" id="heatmapLegendWrap" style="opacity:0.6;">
+                            <span style="font-size:11px;font-weight:600;color:var(--text-muted);">0</span>
+                            <div id="heatmapLegendBar" class="heatmap-legend-bar visits" title="Intensity Color Ramp"></div>
+                            <span id="heatmapMaxLabel" style="font-size:11px;font-weight:700;font-family:var(--font-mono);color:var(--text-primary);">Max: 0</span>
+                        </div>
+
+                        <!-- Reset Heatmap Button -->
+                        <button id="btnResetHeatmap" class="btn btn-secondary" style="font-size:12px;padding:6px 10px;" title="Reset recorded spatial congestion observations while preserving simulation state">
+                            🧹 Clear Heatmap
+                        </button>
+                    </div>
+
+                    <!-- Explanatory note banner -->
+                    <div class="heatmap-notice-badge">
+                        <span>ℹ️</span>
+                        <span><strong>Authoritative Telemetry:</strong> Heatmap visualizes actual spatial observations recorded by the native C++ analytics engine. It represents historical operational data, not a predictive forecast.</span>
+                    </div>
+
+                    <!-- Selected Observation Detail View (Visits / Waiting & Blocked / Replanning) -->
+                    <div id="heatmapDetailPanel" class="heatmap-detail-panel" style="margin-top:10px;"></div>
+
+                    <div id="heatmapFeedbackBanner" class="feedback-banner" style="display:none;margin-top:0;"></div>
+                </div>
+
+                <!-- Multi-Robot Coordination Status Panel -->
+                <div class="coord-panel" aria-label="Multi-Robot Coordination Status">
+                    <div class="coord-panel-header">
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <span style="font-size:14px;">🛡️</span>
+                            <span style="font-size:12px;font-weight:700;color:var(--text-primary);letter-spacing:0.02em;">MULTI-ROBOT COORDINATION ENGINE</span>
+                        </div>
+                        <span id="obstacleModeBadge" class="coord-mode-pill">Click Grid to Add/Remove Obstacles</span>
+                    </div>
+                    <div class="coord-metrics-grid">
+                        <div class="coord-metric-item">
+                            <span class="coord-metric-label">Active Fleet</span>
+                            <span id="coordActiveRobots" class="coord-metric-val">4</span>
+                        </div>
+                        <div class="coord-metric-item">
+                            <span class="coord-metric-label">Waiting Robots</span>
+                            <span id="coordWaitingRobots" class="coord-metric-val amber">0</span>
+                        </div>
+                        <div class="coord-metric-item">
+                            <span class="coord-metric-label">Blocked Robots</span>
+                            <span id="coordBlockedRobots" class="coord-metric-val rose">0</span>
+                        </div>
+                        <div class="coord-metric-item">
+                            <span class="coord-metric-label">Replanned Routes</span>
+                            <span id="coordReplanned" class="coord-metric-val blue">0</span>
+                        </div>
+                        <div class="coord-metric-item">
+                            <span class="coord-metric-label">Collisions Prevented</span>
+                            <span id="coordCollisionsPrevented" class="coord-metric-val green">0</span>
+                        </div>
+                        <div class="coord-metric-item">
+                            <span class="coord-metric-label">Deadlocks Resolved</span>
+                            <span id="coordDeadlocks" class="coord-metric-val purple">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Map Legend -->
+                <div class="map-legend" aria-label="Map Legend">
+                    <div class="legend-badge">
+                        <div class="legend-box" style="background:#1e293b;"></div>
+                        <span>Storage Shelf (S)</span>
+                    </div>
+                    <div class="legend-badge">
+                        <div class="legend-box" style="background:#fee2e2;border:1px solid #f87171;"></div>
+                        <span>Static Obstacle (X)</span>
+                    </div>
+                    <div class="legend-badge">
+                        <div class="legend-box" style="background:#fff7ed;border:1.5px solid #f97316;"></div>
+                        <span>Dynamic Obstacle (⚠️)</span>
+                    </div>
+                    <div class="legend-badge">
+                        <div class="legend-box" style="background:#ecfeff;border:1px solid #06b6d4;"></div>
+                        <span>Charging Bay (⚡)</span>
+                    </div>
+                    <div class="legend-badge">
+                        <div class="legend-box" style="background:#ecfdf5;border:1px solid #10b981;"></div>
+                        <span>Packing Station (📦)</span>
+                    </div>
+                    <div class="legend-badge">
+                        <div class="legend-box" style="background:#ffffff;border:1.5px solid #2563eb;border-radius:50%;"></div>
+                        <span>Robot</span>
+                    </div>
+                    <div class="legend-badge">
+                        <div class="legend-box" style="background:#fef3c7;border:1.5px solid #f59e0b;border-radius:50%;"></div>
+                        <span>Waiting (⏳)</span>
+                    </div>
+                    <div class="legend-badge">
+                        <div class="legend-box" style="background:#fee2e2;border:1.5px solid #e11d48;border-radius:50%;"></div>
+                        <span>Blocked (⛔)</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right: Control Deck & Tabs -->
+            <aside class="control-deck" aria-label="Control Deck">
+                <nav class="section-tabs" role="tablist">
+                    <button class="tab-button active" data-tab="tabDispatch" role="tab">📦 Order Dispatch & Fleet</button>
+                    <button class="tab-button" data-tab="tabAlgorithms" role="tab">🧠 Algorithm Arena</button>
+                    <button class="tab-button" data-tab="tabInventory" role="tab">📋 Inventory Catalog</button>
+                </nav>
+
+                <!-- Tab 1: Dispatch & Fleet -->
+                <div id="tabDispatch" class="tab-pane active" role="tabpanel">
+                    
+                    <!-- Dispatch Form -->
+                    <div class="card form-card">
+                        <h3 style="font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px;color:var(--text-primary);">
+                            <span>➕</span> Dispatch New Warehouse Order
+                        </h3>
+
+                        <div class="form-field">
+                            <label for="productSelect">Select Product Catalog Item:</label>
+                            <select id="productSelect" class="form-select"></select>
+                        </div>
+
+                        <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:12px;">
+                            <div class="form-field">
+                                <label for="quantityInput">Quantity:</label>
+                                <input id="quantityInput" type="number" class="form-input" value="2" min="1" max="25">
+                            </div>
+
+                            <div class="form-field">
+                                <label>Priority Tier:</label>
+                                <div class="priority-button-group">
+                                    <button type="button" class="prio-btn active" data-prio="HIGH">HIGH</button>
+                                    <button type="button" class="prio-btn" data-prio="MEDIUM">MED</button>
+                                    <button type="button" class="prio-btn" data-prio="LOW">LOW</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                            <button id="btnDispatchOrder" class="btn btn-primary" style="justify-content:center;padding:10px;font-size:13px;">
+                                ⚡ Dispatch Order
+                            </button>
+                            <button id="btnBatchDispatchOrders" class="btn btn-secondary" style="justify-content:center;padding:10px;font-size:12px;border-color:var(--accent-blue);color:var(--accent-blue);" title="Dispatches 3 orders simultaneously with High/Med/Low priorities to demonstrate parallel execution across multiple robots">
+                                🚀 Parallel Demo (3 Orders)
+                            </button>
+                        </div>
+                        <div id="overviewOrderFeedback" class="feedback-banner" style="margin-top:8px;"></div>
+                    </div>
+
+                    <!-- Active Orders Queue -->
+                    <div class="form-field">
+                        <label style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">
+                            Active Orders Pipeline
+                        </label>
+                        <div id="activeOrdersContainer" class="orders-list"></div>
+                    </div>
+
+                    <!-- Robot Fleet Status Cards -->
+                    <div class="form-field">
+                        <label style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">
+                            Robot Fleet Status (Polymorphic Fleet)
+                        </label>
+                        <div id="fleetContainer" class="fleet-deck"></div>
+                    </div>
+
+                    <!-- Live Parallel Activity Feed -->
+                    <div class="form-field">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                            <label style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">
+                                📡 Live Parallel Activity Feed
+                            </label>
+                            <button id="btnClearActivityFeed" style="font-size:10px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-family:var(--font-mono);">Clear</button>
+                        </div>
+                        <div id="liveActivityFeed" class="activity-feed-container"></div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Algorithm Comparison Arena -->
+                <div id="tabAlgorithms" class="tab-pane" role="tabpanel">
+                    <div class="card form-card">
+                        <div class="card-title-bar">
+                            <h3 style="font-size:15px;font-weight:700;color:var(--text-primary);">
+                                ⚡ Pathfinding Benchmark: BFS vs Dijkstra vs A*
+                            </h3>
+                        </div>
+
+                        <!-- Coordinate Pickers -->
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                            <div class="form-field">
+                                <label>Start (X, Y):</label>
+                                <div style="display:flex;gap:6px;">
+                                    <input id="startXInput" type="number" class="form-input" value="0" min="0" max="14" style="width:50%;">
+                                    <input id="startYInput" type="number" class="form-input" value="0" min="0" max="14" style="width:50%;">
+                                </div>
+                            </div>
+                            <div class="form-field">
+                                <label>Goal (X, Y):</label>
+                                <div style="display:flex;gap:6px;">
+                                    <input id="goalXInput" type="number" class="form-input" value="14" min="0" max="14" style="width:50%;">
+                                    <input id="goalYInput" type="number" class="form-input" value="14" min="0" max="14" style="width:50%;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <button id="btnRunBenchmark" class="btn btn-primary" style="justify-content:center;padding:10px;font-size:13px;">
+                            ▶️ Run Benchmark
+                        </button>
+
+                        <div class="data-table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Algorithm</th>
+                                        <th>Path Length</th>
+                                        <th>Nodes Visited</th>
+                                        <th>Total Cost</th>
+                                        <th>Time</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="benchmarkResultsTable">
+                                    <tr>
+                                        <td colspan="6" style="color:var(--text-muted);text-align:center;padding:20px;">
+                                            Click "Run Benchmark" to execute algorithmic comparison
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div style="background:var(--accent-blue-soft);border:1px solid var(--accent-blue-border);padding:14px;border-radius:var(--radius-sm);font-size:12px;color:var(--text-secondary);line-height:1.6;">
+                            <strong style="color:var(--accent-blue);">💡 Algorithmic Insights:</strong>
+                            <br>• <strong>BFS</strong> computes uniform hops, finding the shortest unweighted path but exploring an unguided circular frontier.
+                            <br>• <strong>Dijkstra</strong> minimizes weighted traversal costs using a priority queue.
+                            <br>• <strong>A*</strong> incorporates the admissible Manhattan distance heuristic ($h(n) = (|x_1 - x_2| + |y_1 - y_2|) \times C_{\min}$), focusing the frontier toward the destination and dramatically reducing nodes visited.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Inventory Catalog -->
+                <div id="tabInventory" class="tab-pane" role="tabpanel">
+                    <div class="card form-card">
+                        <h3 style="font-size:15px;font-weight:700;color:var(--text-primary);">📋 Warehouse Product Catalog</h3>
+                        <div class="data-table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Product Name</th>
+                                        <th>Shelf Pos</th>
+                                        <th>Stock</th>
+                                        <th>Unit Price</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventoryContainer"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </aside>
+
+            <!-- Right: Warehouse Operations Deck (Visible when Warehouse view is active) -->
+            <aside class="control-deck warehouse-ops-deck" id="warehouseOpsDeck" style="display:none;" aria-label="Warehouse Operations Deck">
+                
+                <!-- Warehouse Order Dispatch -->
+                <div class="card form-card">
+                    <h3 style="font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px;color:var(--text-primary);">
+                        <span>➕</span> Warehouse Order Dispatch
+                    </h3>
+
+                    <div class="form-field">
+                        <label for="warehouseProductSelect">Target Shelf Product:</label>
+                        <select id="warehouseProductSelect" class="form-select"></select>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:12px;">
+                        <div class="form-field">
+                            <label for="warehouseQuantityInput">Quantity:</label>
+                            <input id="warehouseQuantityInput" type="number" class="form-input" value="2" min="1" max="25">
+                            <span id="warehouseStockHelp" style="font-size:11px;color:var(--text-muted);margin-top:2px;">Stock: -- units</span>
+                        </div>
+
+                        <div class="form-field">
+                            <label>Priority Tier:</label>
+                            <div class="priority-button-group" id="warehousePrioGroup">
+                                <button type="button" class="prio-btn active" data-prio="HIGH">HIGH</button>
+                                <button type="button" class="prio-btn" data-prio="MEDIUM">MED</button>
+                                <button type="button" class="prio-btn" data-prio="LOW">LOW</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="btnWarehouseDispatchOrder" class="btn btn-primary" style="justify-content:center;padding:10px;font-size:13px;">
+                        ⚡ Dispatch Warehouse Order
+                    </button>
+                    <div id="warehouseOrderFeedback" class="feedback-banner"></div>
+                </div>
+
+                <!-- Dynamic Obstacle Operations & Cell Inspector -->
+                <div class="card form-card">
+                    <div class="card-title-bar">
+                        <h3 style="font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px;color:var(--text-primary);">
+                            <span>🚧</span> Dynamic Obstacle Inspector
+                        </h3>
+                        <span id="warehouseObstacleStatusTag" class="coord-mode-pill">Mode: OFF</span>
+                    </div>
+
+                    <div class="cell-inspector-box">
+                        <div class="cell-info-row">
+                            <span style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;">Selected Cell:</span>
+                            <span id="inspectorCellCoord" style="font-family:var(--font-mono);font-weight:700;color:var(--text-primary);">(Click grid)</span>
+                        </div>
+                        <div class="cell-info-row">
+                            <span style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;">Cell Status:</span>
+                            <span id="inspectorCellType" style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">Select cell on map</span>
+                        </div>
+                        <div class="cell-info-row">
+                            <span style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;">Dynamic Obstacle:</span>
+                            <span id="inspectorDynamicStatus" style="font-family:var(--font-mono);font-weight:600;color:var(--text-secondary);">None</span>
+                        </div>
+
+                        <!-- Spatial Congestion Observations for Selected Cell -->
+                        <div class="inspector-heatmap-metrics">
+                            <div class="inspector-metric-card">
+                                <span class="inspector-metric-label" style="color:#2563eb;">Visits</span>
+                                <span id="inspectorVisitsVal" class="inspector-metric-val">0</span>
+                            </div>
+                            <div class="inspector-metric-card">
+                                <span class="inspector-metric-label" style="color:#d97706;">Waits</span>
+                                <span id="inspectorWaitsVal" class="inspector-metric-val">0</span>
+                            </div>
+                            <div class="inspector-metric-card">
+                                <span class="inspector-metric-label" style="color:#9333ea;">Replans</span>
+                                <span id="inspectorReplansVal" class="inspector-metric-val">0</span>
+                            </div>
+                        </div>
+
+                        <button id="btnCellPlaceRemoveObstacle" class="btn btn-secondary" style="font-size:12px;padding:7px 12px;justify-content:center;margin-top:8px;">
+                            Toggle Obstacle at Selected Cell
+                        </button>
+                    </div>
+
+                    <div style="display:flex;gap:8px;margin-top:4px;">
+                        <button id="btnWarehouseToggleObstacleMode" class="btn btn-secondary" style="flex:1;font-size:12px;padding:8px 10px;justify-content:center;">
+                            🚧 Obstacle Mode
+                        </button>
+                        <button id="btnClearAllObstacles" class="btn btn-danger" style="flex:1;font-size:12px;padding:8px 10px;justify-content:center;">
+                            🧹 Clear Obstacles
+                        </button>
+                    </div>
+
+                    <div id="obstacleFeedbackBanner" class="feedback-banner"></div>
+                </div>
+
+                <!-- Coordination Invariants & Safety Monitor -->
+                <div class="card form-card">
+                    <h3 style="font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px;color:var(--text-primary);margin-bottom:8px;">
+                        <span>🛡️</span> Multi-Robot Safety Invariants
+                    </h3>
+                    <div class="invariants-list">
+                        <div class="invariant-item">
+                            <span class="check">✓</span>
+                            <span><strong>Vertex Collision Prevention:</strong> Max 1 robot / cell at tick <em>t</em></span>
+                        </div>
+                        <div class="invariant-item">
+                            <span class="check">✓</span>
+                            <span><strong>Head-on Edge Swap:</strong> Opposing traversal rejected</span>
+                        </div>
+                        <div class="invariant-item">
+                            <span class="check">✓</span>
+                            <span><strong>Station Capacity:</strong> Packing bay capacity strictly &le; 1</span>
+                        </div>
+                        <div class="invariant-item">
+                            <span class="check">✓</span>
+                            <span><strong>Space-Time A*:</strong> 4D Reservation Table routing</span>
+                        </div>
+                        <div class="invariant-item">
+                            <span class="check">✓</span>
+                            <span><strong>Deadlock Threshold:</strong> Auto-replan after 3 wait ticks</span>
+                        </div>
+                    </div>
+                </div>
+
+        </main>
+
+        <!-- Stage D: Intelligent Operational Analytics & Simulation Intelligence -->
+        <section id="overviewAnalyticsSection" class="overview-analytics-section" aria-label="Operational Analytics Dashboard">
+            
+            <!-- Analytics Header & Report Export Actions -->
+            <div class="analytics-header-bar">
+                <div class="analytics-title-group">
+                    <h2><span>📊</span> Operational Intelligence &amp; Simulation Analytics</h2>
+                    <p>Authoritative C++ native telemetry, robot utilization, order lifecycle velocity, and battery intelligence.</p>
+                </div>
+                <div class="analytics-actions-group">
+                    <button id="btnDownloadCSVReport" class="analytics-btn" title="Download authoritative simulation audit report in CSV format">
+                        📥 Download CSV Report
+                    </button>
+                    <button id="btnViewHTMLReport" class="analytics-btn" title="Open formatted HTML operational audit report">
+                        📄 Open HTML Report
+                    </button>
+                    <button id="btnRunBenchmarkSuite" class="analytics-btn primary" title="Run standard canonical pathfinding benchmark suite across BFS, Dijkstra, and A*">
+                        ⚡ Run Benchmark Suite
+                    </button>
+                    <button id="btnSaveSnapshot" class="analytics-btn" title="Save current warehouse runtime snapshot to file">
+                        💾 Save Snapshot
+                    </button>
+                    <button id="btnLoadSnapshot" class="analytics-btn" title="Restore warehouse runtime snapshot from file">
+                        📂 Load Snapshot
+                    </button>
+                    <button id="btnLoadConfig" class="analytics-btn" title="Reload warehouse configuration files">
+                        ⚙️ Load Config
+                    </button>
+                    <button id="btnResetAnalyticsData" class="analytics-btn" title="Reset observed metrics and historical analytics without resetting warehouse state" style="color:var(--accent-rose);">
+                        🔄 Reset Analytics
+                    </button>
+                </div>
+            </div>
+
+            <div id="analyticsFeedbackBanner" class="feedback-banner" style="margin-bottom:12px;display:none;"></div>
+
+            <!-- 6 Key Operational Analytics KPI Cards -->
+            <div class="analytics-kpi-grid">
+                
+                <!-- KPI 1: Observed Simulation Duration -->
+                <div class="analytics-kpi-card">
+                    <div class="analytics-kpi-label">
+                        <span>Simulation Duration</span>
+                        <span>⏱️</span>
+                    </div>
+                    <div id="analyticsObservedTicks" class="analytics-kpi-value">0 ticks</div>
+                    <div id="analyticsTickSubtitle" class="analytics-kpi-sub">Observed since last reset</div>
+                </div>
+
+                <!-- KPI 2: Fleet Working Utilization -->
+                <div class="analytics-kpi-card">
+                    <div class="analytics-kpi-label">
+                        <span>Fleet Working Util</span>
+                        <span>⚡</span>
+                    </div>
+                    <div id="analyticsFleetUtil" class="analytics-kpi-value">0.0%</div>
+                    <div id="analyticsFleetUtilSub" class="analytics-kpi-sub">Working / Observed Ticks</div>
+                </div>
+
+                <!-- KPI 3: Average Completion Duration -->
+                <div class="analytics-kpi-card">
+                    <div class="analytics-kpi-label">
+                        <span>Avg Completion Time</span>
+                        <span>📦</span>
+                    </div>
+                    <div id="analyticsAvgDuration" class="analytics-kpi-value">--</div>
+                    <div id="analyticsDurationRange" class="analytics-kpi-sub">Min: -- &bull; Max: --</div>
+                </div>
+
+                <!-- KPI 4: Order Throughput -->
+                <div class="analytics-kpi-card">
+                    <div class="analytics-kpi-label">
+                        <span>Order Throughput</span>
+                        <span>🎯</span>
+                    </div>
+                    <div id="analyticsThroughput" class="analytics-kpi-value">0 / 0</div>
+                    <div id="analyticsCompletionRate" class="analytics-kpi-sub">0.0% completion rate</div>
+                </div>
+
+                <!-- KPI 5: Fleet Battery Consumed -->
+                <div class="analytics-kpi-card">
+                    <div class="analytics-kpi-label">
+                        <span>Battery Consumption</span>
+                        <span>🔋</span>
+                    </div>
+                    <div id="analyticsTotalBattConsumed" class="analytics-kpi-value">0.0%</div>
+                    <div id="analyticsLowestRobot" class="analytics-kpi-sub">Lowest: 100% (Fleet Init)</div>
+                </div>
+
+                <!-- KPI 6: Coordination Interventions -->
+                <div class="analytics-kpi-card">
+                    <div class="analytics-kpi-label">
+                        <span>Coordination Safety</span>
+                        <span>🛡️</span>
+                    </div>
+                    <div id="analyticsCoordSummary" class="analytics-kpi-value">0 events</div>
+                    <div id="analyticsCoordSub" class="analytics-kpi-sub">0 col &bull; 0 dlk &bull; 0 rep</div>
+                </div>
+
+            </div>
+
+            <!-- Detailed Breakdowns: Robot Utilization & Order Lifecycle -->
+            <div class="analytics-panels-grid">
+                
+                <!-- Left: Per-Robot Utilization & Operational State Distribution -->
+                <div class="analytics-breakdown-card">
+                    <div class="analytics-breakdown-title">
+                        <span>🤖 Robot Operational State Distribution &amp; Steps</span>
+                        <div class="legend-inline">
+                            <span><span class="legend-dot working"></span>Working</span>
+                            <span><span class="legend-dot waiting"></span>Waiting</span>
+                            <span><span class="legend-dot charging"></span>Charging</span>
+                            <span><span class="legend-dot idle"></span>Idle</span>
+                        </div>
+                    </div>
+
+                    <div id="utilizationRowsContainer" class="utilization-rows-container">
+                        <!-- Populated dynamically from analytics.robotUtilization -->
+                        <div style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px;">
+                            Initializing robot utilization tracking...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Fulfillment Categories & Operational Recommendations -->
+                <div class="analytics-breakdown-card">
+                    <div class="analytics-breakdown-title">
+                        <span>💡 Operational Recommendations &amp; Alerts</span>
+                        <span id="recommendationsCountBadge" style="font-size:11px;font-family:var(--font-mono);font-weight:700;padding:2px 8px;border-radius:var(--radius-full);background:var(--accent-blue-soft);color:var(--accent-blue);">0 ALERTS</span>
+                    </div>
+
+                    <div id="recommendationsContainer" class="recommendations-box">
+                        <!-- Populated dynamically from analytics.recommendations -->
+                        <div style="color:var(--text-muted);font-size:13px;text-align:center;padding:20px;">
+                            No operational alerts. Warehouse running in normal parameters.
+                        </div>
+                    </div>
+
+                    <!-- Category Fulfillment Summary -->
+                    <div style="border-top:1px solid var(--border-subtle);padding-top:10px;margin-top:6px;">
+                        <span style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;">Units Fulfilled by Category</span>
+                        <div id="categoryFulfillmentList" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;">
+                            <span style="font-size:12px;color:var(--text-muted);">No orders delivered yet.</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- Dedicated Fleet Management Hub -->
+        <section id="viewFleet" class="app-view">
+            <div class="view-header">
+                <div class="view-header-title">
+                    <h2><span>🤖</span> Fleet Management &amp; Telemetry Hub</h2>
+                    <p>Real-time polymorphic fleet monitoring, battery management, route tracking, and space-time coordination.</p>
+                </div>
+                <div class="view-header-pills">
+                    <span id="fleetLiveSyncBadge" class="status-pill"><span class="indicator-dot"></span> Live Fleet Telemetry Active</span>
+                </div>
+            </div>
+
+            <!-- Fleet KPI Overview -->
+            <div class="fleet-kpi-grid">
+                <div class="card kpi-card">
+                    <div class="kpi-header"><span class="kpi-title">Total Fleet</span><div class="kpi-icon-pill blue">🤖</div></div>
+                    <div id="fleetKpiTotal" class="kpi-value">4</div>
+                    <div class="kpi-subtext">Registered fleet units</div>
+                </div>
+                <div class="card kpi-card">
+                    <div class="kpi-header"><span class="kpi-title">Idle Robots</span><div class="kpi-icon-pill green">💤</div></div>
+                    <div id="fleetKpiIdle" class="kpi-value">4</div>
+                    <div class="kpi-subtext">Available for dispatch</div>
+                </div>
+                <div class="card kpi-card">
+                    <div class="kpi-header"><span class="kpi-title">Working Robots</span><div class="kpi-icon-pill purple">⚡</div></div>
+                    <div id="fleetKpiWorking" class="kpi-value">0</div>
+                    <div class="kpi-subtext">Picking / Transit / Delivering</div>
+                </div>
+                <div class="card kpi-card">
+                    <div class="kpi-header"><span class="kpi-title">Waiting Robots</span><div class="kpi-icon-pill amber">⏳</div></div>
+                    <div id="fleetKpiWaiting" class="kpi-value" style="color:#d97706;">0</div>
+                    <div class="kpi-subtext">Yielding at contested cells</div>
+                </div>
+                <div class="card kpi-card">
+                    <div class="kpi-header"><span class="kpi-title">Blocked Robots</span><div class="kpi-icon-pill" style="background:#fff1f2;color:#e11d48;">⛔</div></div>
+                    <div id="fleetKpiBlocked" class="kpi-value" style="color:#e11d48;">0</div>
+                    <div class="kpi-subtext">Awaiting route clearance</div>
+                </div>
+                <div class="card kpi-card">
+                    <div class="kpi-header"><span class="kpi-title">Average Battery</span><div class="kpi-icon-pill amber">🔋</div></div>
+                    <div id="fleetKpiAvgBatt" class="kpi-value">100%</div>
+                    <div class="kpi-subtext">Auto-charge at &le; 25%</div>
+                </div>
+            </div>
+
+            <!-- Stage E: Fleet Utilization & Battery Intelligence Analytics -->
+            <div class="fleet-analytics-section" style="margin-bottom:20px;">
+                <div class="analytics-panels-grid">
+                    
+                    <!-- Panel 1: Per-Robot Utilization & Operational State Comparison -->
+                    <div class="analytics-breakdown-card">
+                        <div class="analytics-breakdown-title">
+                            <span>⚡ Robot Utilization &amp; Operational States</span>
+                            <div class="legend-inline">
+                                <span><span class="legend-dot working"></span>Working</span>
+                                <span><span class="legend-dot waiting"></span>Waiting</span>
+                                <span><span class="legend-dot" style="background:#e11d48;"></span>Blocked</span>
+                                <span><span class="legend-dot charging"></span>Charging</span>
+                                <span><span class="legend-dot idle"></span>Idle</span>
+                            </div>
+                        </div>
+                        <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">
+                            Denominator: Total observed simulation ticks (<span id="fleetAnalyticsObservedTicks" style="font-family:var(--font-mono);font-weight:700;">0 ticks</span>). Status formula: <em>ticks / observedTicks &times; 100%</em>.
+                        </div>
+                        <div id="fleetUtilizationComparisonTable" class="data-table-container">
+                            <!-- Rendered dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Panel 2: Battery Intelligence & Fleet Health Telemetry -->
+                    <div class="analytics-breakdown-card">
+                        <div class="analytics-breakdown-title">
+                            <span>🔋 Battery Intelligence &amp; Health Radar</span>
+                            <span id="fleetBatteryHealthBadge" style="font-size:11px;font-family:var(--font-mono);font-weight:700;padding:2px 8px;border-radius:var(--radius-full);background:var(--accent-emerald-soft);color:var(--accent-emerald);">HEALTH OPTIMAL</span>
+                        </div>
+                        
+                        <!-- Battery Quick KPIs -->
+                        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:10px;margin-bottom:12px;">
+                            <div style="background:var(--bg-card-subtle);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:8px 10px;">
+                                <span style="font-size:11px;color:var(--text-muted);display:block;">Fleet Range</span>
+                                <strong id="fleetBattRangeVal" style="font-size:13px;color:var(--text-primary);font-family:var(--font-mono);">100% &ndash; 100%</strong>
+                            </div>
+                            <div style="background:var(--bg-card-subtle);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:8px 10px;">
+                                <span style="font-size:11px;color:var(--text-muted);display:block;">Total Consumed</span>
+                                <strong id="fleetBattConsumedVal" style="font-size:13px;color:var(--text-primary);font-family:var(--font-mono);">0.0%</strong>
+                            </div>
+                            <div style="background:var(--bg-card-subtle);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:8px 10px;">
+                                <span style="font-size:11px;color:var(--text-muted);display:block;">Charging Events</span>
+                                <strong id="fleetChargingEventsVal" style="font-size:13px;color:var(--accent-emerald);font-family:var(--font-mono);">0 events (0t)</strong>
+                            </div>
+                        </div>
+
+                        <!-- Per-Robot Battery Telemetry & Trend List -->
+                        <div id="fleetBatteryRadarList" style="display:flex;flex-direction:column;gap:8px;">
+                            <!-- Rendered dynamically -->
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Fleet Filter and Sort Controls -->
+            <div class="fleet-toolbar-card">
+                <div class="fleet-filters-group">
+                    <span class="filter-label">Filter:</span>
+                    <select id="fleetFilterType" class="fleet-select">
+                        <option value="ALL">All Robot Types</option>
+                        <option value="PickerRobot">PickerRobot (Fast Picker)</option>
+                        <option value="TransportRobot">TransportRobot (Heavy Hauler)</option>
+                        <option value="HybridRobot">HybridRobot (Multi-Role)</option>
+                    </select>
+
+                    <select id="fleetFilterStatus" class="fleet-select">
+                        <option value="ALL">All Statuses</option>
+                        <option value="IDLE">IDLE</option>
+                        <option value="MOVING_TO_PICK">MOVING_TO_PICK</option>
+                        <option value="PICKING">PICKING</option>
+                        <option value="MOVING_TO_PACK">MOVING_TO_PACK</option>
+                        <option value="DELIVERING">DELIVERING</option>
+                        <option value="WAITING">WAITING</option>
+                        <option value="BLOCKED">BLOCKED</option>
+                        <option value="RETURNING_TO_CHARGE">RETURNING_TO_CHARGE</option>
+                        <option value="CHARGING">CHARGING</option>
+                        <option value="LOW_BATTERY">LOW_BATTERY</option>
+                    </select>
+
+                    <select id="fleetFilterBattery" class="fleet-select">
+                        <option value="ALL">All Battery Levels</option>
+                        <option value="HIGH">High (&gt; 75%)</option>
+                        <option value="MEDIUM">Medium (25% &ndash; 75%)</option>
+                        <option value="LOW">Low / Warning (&le; 25%)</option>
+                        <option value="CRITICAL">Critical (&lt; 15%)</option>
+                    </select>
+
+                    <span class="filter-label" style="margin-left:6px;">Sort:</span>
+                    <select id="fleetSortBy" class="fleet-select">
+                        <option value="ID_ASC">Robot ID (R01 &rarr; R04)</option>
+                        <option value="NAME_ASC">Robot Name (A &rarr; Z)</option>
+                        <option value="BATT_DESC">Battery (High to Low)</option>
+                        <option value="BATT_ASC">Battery (Low to High)</option>
+                        <option value="LOAD_DESC">Payload (High to Low)</option>
+                        <option value="WAIT_DESC">Wait Ticks (High to Low)</option>
+                    </select>
+                </div>
+
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <input id="fleetSearchInput" type="text" class="fleet-search-input" placeholder="Search robot name or ID...">
+                    <button id="btnResetFleetFilters" class="btn btn-secondary" style="padding:6px 12px;font-size:12px;">Reset Filters</button>
+                </div>
+            </div>
+
+            <!-- Detailed Robot Cards Grid -->
+            <div id="fleetCardsGrid" class="fleet-cards-grid"></div>
+        </section>
+
+        <!-- Dedicated Orders Pipeline View -->
+        <section id="viewOrders" class="app-view">
+            <div class="view-header">
+                <div class="view-header-title">
+                    <h2><span>📦</span> Warehouse Orders Pipeline &amp; Fulfillment</h2>
+                    <p>Track order dispatch, autonomous picking transit, packing station delivery, and completion telemetry.</p>
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 2fr;gap:24px;align-items:start;">
+                <!-- Orders Dispatch Card -->
+                <div class="card form-card">
+                    <h3 style="font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px;color:var(--text-primary);">
+                        <span>➕</span> Dispatch New Order
+                    </h3>
+                    <div class="form-field">
+                        <label for="ordersViewProductSelect">Select Product Catalog Item:</label>
+                        <select id="ordersViewProductSelect" class="form-select"></select>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:12px;">
+                        <div class="form-field">
+                            <label for="ordersViewQuantityInput">Quantity:</label>
+                            <input id="ordersViewQuantityInput" type="number" class="form-input" value="2" min="1" max="25">
+                            <span id="ordersViewStockHelp" style="font-size:11px;color:var(--text-muted);margin-top:2px;">Stock: -- units</span>
+                        </div>
+                        <div class="form-field">
+                            <label>Priority Tier:</label>
+                            <div class="priority-button-group" id="ordersViewPrioGroup">
+                                <button type="button" class="prio-btn active" data-prio="HIGH">HIGH</button>
+                                <button type="button" class="prio-btn" data-prio="MEDIUM">MED</button>
+                                <button type="button" class="prio-btn" data-prio="LOW">LOW</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        <button id="btnOrdersViewDispatch" class="btn btn-primary" style="justify-content:center;padding:10px;font-size:13px;">
+                            ⚡ Dispatch Order
+                        </button>
+                        <button id="btnOrdersViewBatchDispatch" class="btn btn-secondary" style="justify-content:center;padding:10px;font-size:12px;border-color:var(--accent-blue);color:var(--accent-blue);" title="Dispatches 3 orders simultaneously to demonstrate multi-robot parallel execution">
+                            🚀 Parallel Demo (3 Orders)
+                        </button>
+                    </div>
+                    <div id="ordersViewFeedback" class="feedback-banner"></div>
+                </div>
+
+                <!-- Orders Pipeline Queue & History -->
+                <div style="display:flex;flex-direction:column;gap:16px;">
+                    <div class="card form-card">
+                        <h3 style="font-size:15px;font-weight:700;color:var(--text-primary);margin-bottom:12px;">
+                            Active Orders Pipeline
+                        </h3>
+                        <div id="ordersViewActiveList" class="orders-list"></div>
+                    </div>
+
+                    <div class="card form-card">
+                        <h3 style="font-size:15px;font-weight:700;color:var(--text-primary);margin-bottom:12px;">
+                            Completed Orders History
+                        </h3>
+                        <div id="ordersViewCompletedList" class="orders-list"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dedicated Inventory View -->
+        <section id="viewInventory" class="app-view">
+            <div class="view-header">
+                <div class="view-header-title">
+                    <h2><span>📋</span> Warehouse Product Inventory &amp; Stock Control</h2>
+                    <p>Live inventory quantities, storage aisle shelf locations, product categories, and unit pricing.</p>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <input id="inventorySearchInput" type="text" class="fleet-search-input" placeholder="Search catalog products...">
+                </div>
+            </div>
+
+            <div class="card form-card">
+                <div class="data-table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Product ID</th>
+                                <th>Product Name &amp; Category</th>
+                                <th>Shelf Position</th>
+                                <th>Available Stock</th>
+                                <th>Unit Price</th>
+                                <th>Stock Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryViewTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dedicated Algorithms View -->
+        <!-- Dedicated Algorithms View: DSA Algorithm Laboratory -->
+        <section id="viewAlgorithms" class="app-view">
+            <div class="view-header">
+                <div class="view-header-title">
+                    <h2><span>🧠</span> DSA Algorithm Laboratory: BFS, Dijkstra &amp; A* Pathfinding</h2>
+                    <p>Interactive step-by-step exploration, live node expansion visualization, real-time performance telemetry, and comparative benchmarks.</p>
+                </div>
+                <div class="view-header-actions">
+                    <button id="btnOpenBenchmarkSuiteModal" class="btn btn-secondary" style="font-weight:600;padding:8px 16px;">
+                        ⚡ Controlled Benchmark Suite
+                    </button>
+                </div>
+            </div>
+
+            <!-- Algorithm Lab Toolbar & Config Card -->
+            <div class="card form-card" style="margin-bottom:20px;padding:18px 22px;">
+                <!-- Algorithm Selection Tabs -->
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border-subtle);">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-right:4px;">Algorithm:</span>
+                        <div class="filter-pills" id="algoModePills">
+                            <button class="filter-pill active" data-algo="A*">🟣 A* Search</button>
+                            <button class="filter-pill" data-algo="Dijkstra">🔵 Dijkstra</button>
+                            <button class="filter-pill" data-algo="BFS">🟢 BFS</button>
+                            <button class="filter-pill" data-algo="COMPARE">⚡ Compare All</button>
+                        </div>
+                    </div>
+
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <span style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-right:4px;">Grid Tools:</span>
+                        <button id="btnToolSetStart" class="btn btn-outline" style="padding:6px 12px;font-size:12px;font-weight:600;" title="Click cell on grid to set Start">
+                            🎯 Pick Start
+                        </button>
+                        <button id="btnToolSetGoal" class="btn btn-outline" style="padding:6px 12px;font-size:12px;font-weight:600;" title="Click cell on grid to set Goal">
+                            🏁 Pick Goal
+                        </button>
+                        <button id="btnToolToggleObstacle" class="btn btn-outline" style="padding:6px 12px;font-size:12px;font-weight:600;" title="Click cells to add/remove custom obstacles">
+                            🧱 Toggle Obstacle
+                        </button>
+                        <button id="btnClearCustomObstacles" class="btn btn-outline" style="padding:6px 12px;font-size:12px;color:var(--accent-rose);" title="Clear all custom placed obstacles">
+                            🧹 Clear Obstacles
+                        </button>
+                        <button id="btnResetLabDefaults" class="btn btn-outline" style="padding:6px 12px;font-size:12px;" title="Reset start, goal, and obstacles to defaults">
+                            ↺ Reset Grid
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Coordinates Inputs & Playback Controls -->
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+                    <!-- Coordinates -->
+                    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <label style="font-size:12px;font-weight:600;color:var(--text-secondary);">Start (X, Y):</label>
+                            <input id="algoStartX" type="number" class="form-input" value="0" min="0" max="14" style="width:58px;padding:6px 8px;font-size:13px;text-align:center;">
+                            <input id="algoStartY" type="number" class="form-input" value="0" min="0" max="14" style="width:58px;padding:6px 8px;font-size:13px;text-align:center;">
+                        </div>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <label style="font-size:12px;font-weight:600;color:var(--text-secondary);">Goal (X, Y):</label>
+                            <input id="algoGoalX" type="number" class="form-input" value="14" min="0" max="14" style="width:58px;padding:6px 8px;font-size:13px;text-align:center;">
+                            <input id="algoGoalY" type="number" class="form-input" value="14" min="0" max="14" style="width:58px;padding:6px 8px;font-size:13px;text-align:center;">
+                        </div>
+                    </div>
+
+                    <!-- Playback Toolbar -->
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                        <button id="btnAlgoRun" class="btn btn-primary" style="padding:8px 18px;font-size:13px;font-weight:700;">
+                            ▶️ Run Algorithm
+                        </button>
+                        <button id="btnAlgoPauseResume" class="btn btn-secondary" style="padding:8px 14px;font-size:13px;" title="Pause or Resume step-by-step animation">
+                            ⏯ Pause
+                        </button>
+                        <button id="btnAlgoStep" class="btn btn-secondary" style="padding:8px 14px;font-size:13px;" title="Advance one single exploration step">
+                            ⏭ Step
+                        </button>
+                        <button id="btnAlgoResetAnim" class="btn btn-outline" style="padding:8px 14px;font-size:13px;" title="Reset animation to start">
+                            🔄 Reset
+                        </button>
+
+                        <div style="display:flex;align-items:center;gap:8px;margin-left:6px;background:var(--bg-card-subtle);padding:4px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);">
+                            <span style="font-size:11px;font-weight:600;color:var(--text-muted);white-space:nowrap;">Speed:</span>
+                            <input id="algoSpeedSlider" type="range" min="5" max="150" value="40" style="width:80px;cursor:pointer;">
+                            <span id="algoSpeedLabel" style="font-size:11px;font-family:var(--font-mono);color:var(--text-secondary);min-width:44px;">40ms</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Two-Column Workspace Layout -->
+            <div style="display:grid;grid-template-columns:minmax(320px, 560px) 1fr;gap:24px;align-items:start;">
+                <!-- Left Column: Visual Exploration Canvas Arena -->
+                <div class="card" style="padding:16px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border-subtle);">
+                        <h3 style="font-size:14px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:6px;">
+                            <span>🗺️</span> Grid Exploration Arena (15×15)
+                        </h3>
+                        <span id="algoStatusBadge" class="status-badge" style="background:#e0e7ff;color:#4338ca;font-size:11px;">
+                            Ready
+                        </span>
+                    </div>
+
+                    <div style="position:relative;display:flex;justify-content:center;background:#f8fafc;padding:8px;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);">
+                        <canvas id="algoCanvas" width="540" height="540"></canvas>
+                        <div id="algoTooltip" class="canvas-tooltip" style="display:none;position:fixed;z-index:9999;background:rgba(255,255,255,0.96);backdrop-filter:blur(6px);border:1px solid var(--border-subtle);border-radius:8px;padding:10px 14px;box-shadow:0 8px 24px rgba(0,0,0,0.12);font-size:12px;pointer-events:none;color:var(--text-primary);max-width:240px;"></div>
+                    </div>
+
+                    <!-- Visual State Legend -->
+                    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border-subtle);font-size:11px;color:var(--text-secondary);">
+                        <span style="display:flex;align-items:center;gap:5px;">
+                            <span style="width:12px;height:12px;background:#10b981;border-radius:2px;display:inline-block;"></span> Start (S)
+                        </span>
+                        <span style="display:flex;align-items:center;gap:5px;">
+                            <span style="width:12px;height:12px;background:#ef4444;border-radius:2px;display:inline-block;"></span> Goal (G)
+                        </span>
+                        <span style="display:flex;align-items:center;gap:5px;">
+                            <span style="width:12px;height:12px;background:#7c3aed;border-radius:2px;display:inline-block;"></span> Explored Node
+                        </span>
+                        <span style="display:flex;align-items:center;gap:5px;">
+                            <span style="width:12px;height:12px;border:2px solid #f59e0b;border-radius:2px;display:inline-block;"></span> Frontier
+                        </span>
+                        <span style="display:flex;align-items:center;gap:5px;">
+                            <span style="width:12px;height:12px;background:#fbbf24;border-radius:2px;display:inline-block;"></span> Optimal Route
+                        </span>
+                        <span style="display:flex;align-items:center;gap:5px;">
+                            <span style="width:12px;height:12px;background:#334155;border-radius:2px;display:inline-block;"></span> Shelf/Obstacle
+                        </span>
+                        <span style="display:flex;align-items:center;gap:5px;">
+                            <span style="width:12px;height:12px;background:#ef4444;border-radius:2px;display:inline-block;"></span> Custom Obstacle
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Right Column: Performance Telemetry, Comparison Table, Charts & Reports -->
+                <div style="display:flex;flex-direction:column;gap:18px;">
+                    <!-- Real-Time Metric Cards -->
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:12px;">
+                        <div class="stat-card" style="padding:14px;">
+                            <span class="stat-label">Execution Time</span>
+                            <span id="algoMetricTime" class="stat-value" style="font-size:20px;color:var(--accent-blue);">0.00 µs</span>
+                            <span class="stat-subtext" style="font-size:10px;">Native C++ Timer</span>
+                        </div>
+                        <div class="stat-card" style="padding:14px;">
+                            <span class="stat-label">Nodes Explored</span>
+                            <span id="algoMetricExplored" class="stat-value" style="font-size:20px;color:var(--accent-purple);">0</span>
+                            <span class="stat-subtext" style="font-size:10px;">Expanded from Open Set</span>
+                        </div>
+                        <div class="stat-card" style="padding:14px;">
+                            <span class="stat-label">Path Length</span>
+                            <span id="algoMetricLength" class="stat-value" style="font-size:20px;color:var(--accent-emerald);">0 cells</span>
+                            <span id="algoMetricSteps" class="stat-subtext" style="font-size:10px;">0 steps</span>
+                        </div>
+                        <div class="stat-card" style="padding:14px;">
+                            <span class="stat-label">Total Cost</span>
+                            <span id="algoMetricCost" class="stat-value" style="font-size:20px;color:var(--accent-amber);">0.0</span>
+                            <span class="stat-subtext" style="font-size:10px;">Weighted Edge Sum</span>
+                        </div>
+                        <div class="stat-card" style="padding:14px;">
+                            <span class="stat-label">Efficiency</span>
+                            <span id="algoMetricEfficiency" class="stat-value" style="font-size:20px;color:var(--accent-emerald);">--</span>
+                            <span class="stat-subtext" style="font-size:10px;">Pruning vs BFS</span>
+                        </div>
+                    </div>
+
+                    <!-- Comparative Table Card -->
+                    <div class="card" style="padding:16px;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                            <h3 style="font-size:14px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:6px;">
+                                <span>📊</span> Pathfinding Comparison Table
+                            </h3>
+                            <span id="algoSourceLabel" style="font-size:11px;font-family:var(--font-mono);color:var(--text-muted);">
+                                Native C++ PathFinder Engine
+                            </span>
+                        </div>
+
+                        <div class="data-table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Algorithm</th>
+                                        <th>Length</th>
+                                        <th>Steps</th>
+                                        <th>Explored</th>
+                                        <th>Cost</th>
+                                        <th>Time (µs)</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="algoResultsTableBody">
+                                    <tr><td colspan="7" style="color:var(--text-muted);text-align:center;padding:20px;">Click "Run Algorithm" to execute pathfinding</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Comparative Visual Bar Charts -->
+                    <div class="card" style="padding:16px;">
+                        <h3 style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:14px;display:flex;align-items:center;gap:6px;">
+                            <span>📈</span> Comparative Search Efficiency
+                        </h3>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                            <!-- Nodes Explored Bar Chart -->
+                            <div>
+                                <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">Nodes Explored (Lower is Better)</div>
+                                <div style="display:flex;flex-direction:column;gap:8px;">
+                                    <div>
+                                        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px;">
+                                            <span>BFS</span>
+                                            <span id="chartBfsNodes" style="font-family:var(--font-mono);font-weight:700;">0</span>
+                                        </div>
+                                        <div style="background:#e2e8f0;border-radius:4px;height:12px;overflow:hidden;">
+                                            <div id="barBfsNodes" style="width:0%;height:100%;background:#3b82f6;transition:width 0.4s ease;"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px;">
+                                            <span>Dijkstra</span>
+                                            <span id="chartDijkstraNodes" style="font-family:var(--font-mono);font-weight:700;">0</span>
+                                        </div>
+                                        <div style="background:#e2e8f0;border-radius:4px;height:12px;overflow:hidden;">
+                                            <div id="barDijkstraNodes" style="width:0%;height:100%;background:#10b981;transition:width 0.4s ease;"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px;">
+                                            <span>A* Search</span>
+                                            <span id="chartAstarNodes" style="font-family:var(--font-mono);font-weight:700;">0</span>
+                                        </div>
+                                        <div style="background:#e2e8f0;border-radius:4px;height:12px;overflow:hidden;">
+                                            <div id="barAstarNodes" style="width:0%;height:100%;background:#7c3aed;transition:width 0.4s ease;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Execution Time Bar Chart -->
+                            <div>
+                                <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">Execution Time (µs)</div>
+                                <div style="display:flex;flex-direction:column;gap:8px;">
+                                    <div>
+                                        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px;">
+                                            <span>BFS</span>
+                                            <span id="chartBfsTime" style="font-family:var(--font-mono);font-weight:700;">0.00 µs</span>
+                                        </div>
+                                        <div style="background:#e2e8f0;border-radius:4px;height:12px;overflow:hidden;">
+                                            <div id="barBfsTime" style="width:0%;height:100%;background:#3b82f6;transition:width 0.4s ease;"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px;">
+                                            <span>Dijkstra</span>
+                                            <span id="chartDijkstraTime" style="font-family:var(--font-mono);font-weight:700;">0.00 µs</span>
+                                        </div>
+                                        <div style="background:#e2e8f0;border-radius:4px;height:12px;overflow:hidden;">
+                                            <div id="barDijkstraTime" style="width:0%;height:100%;background:#10b981;transition:width 0.4s ease;"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px;">
+                                            <span>A* Search</span>
+                                            <span id="chartAstarTime" style="font-family:var(--font-mono);font-weight:700;">0.00 µs</span>
+                                        </div>
+                                        <div style="background:#e2e8f0;border-radius:4px;height:12px;overflow:hidden;">
+                                            <div id="barAstarTime" style="width:0%;height:100%;background:#7c3aed;transition:width 0.4s ease;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Report Export & Algorithmic Summary Card -->
+                    <div class="card" style="padding:16px;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+                            <h3 style="font-size:14px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:6px;">
+                                <span>📋</span> Export &amp; Comprehensive Report
+                            </h3>
+                            <div style="display:flex;gap:8px;">
+                                <button id="btnAlgoExportJSON" class="btn btn-outline" style="padding:6px 12px;font-size:12px;font-weight:600;">
+                                    💾 Export JSON
+                                </button>
+                                <button id="btnAlgoExportCSV" class="btn btn-outline" style="padding:6px 12px;font-size:12px;font-weight:600;">
+                                    📊 Export CSV
+                                </button>
+                            </div>
+                        </div>
+                        <div id="algoSummaryText" style="font-size:12px;color:var(--text-secondary);line-height:1.6;background:var(--bg-card-subtle);padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);">
+                            Select start/goal coordinates, place any optional custom obstacles, and click <strong>Run Algorithm</strong> or <strong>Compare All</strong> to generate comparative telemetry.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dedicated EcoRoute View: Energy-Aware Routing & Optimization -->
+        <section id="viewEcoRoute" class="app-view">
+            <div class="view-header">
+                <div class="view-header-title">
+                    <h2><span>🌱</span> EcoRoute: Energy-Aware Robot Routing &amp; Fleet Governance</h2>
+                    <p>Physics-grounded energy minimization (EU), payload scaling, high-friction terrain avoidance, 4-leg battery feasibility assessment, and intelligent charging station selection.</p>
+                </div>
+                <div class="view-header-actions" style="display:flex;gap:10px;align-items:center;">
+                    <button id="btnExportEcoJson" class="btn btn-secondary" style="font-weight:600;padding:8px 14px;font-size:12px;">
+                        📥 Export JSON Report
+                    </button>
+                    <button id="btnExportEcoCsv" class="btn btn-secondary" style="font-weight:600;padding:8px 14px;font-size:12px;">
+                        📊 Export CSV Report
+                    </button>
+                    <button id="btnRecommendChargingGlobal" class="btn btn-primary" style="font-weight:700;padding:8px 16px;font-size:12px;">
+                        ⚡ Smart Charging Advisory
+                    </button>
+                </div>
+            </div>
+
+            <!-- EcoRoute Live KPI Metrics Grid -->
+            <div class="kpi-grid" style="margin-bottom:20px;">
+                <div class="card kpi-card">
+                    <div class="kpi-header">
+                        <span class="kpi-title">Total Energy Consumed</span>
+                        <div class="kpi-icon-pill green">⚡</div>
+                    </div>
+                    <div id="kpiEcoTotalEnergy" class="kpi-value">0.0 EU</div>
+                    <div class="kpi-subtext">Cumulative across entire fleet</div>
+                </div>
+
+                <div class="card kpi-card">
+                    <div class="kpi-header">
+                        <span class="kpi-title">Average Efficiency</span>
+                        <div class="kpi-icon-pill blue">📈</div>
+                    </div>
+                    <div id="kpiEcoAvgEfficiency" class="kpi-value">0.50 EU/step</div>
+                    <div class="kpi-subtext">Energy per unit distance travelled</div>
+                </div>
+
+                <div class="card kpi-card">
+                    <div class="kpi-header">
+                        <span class="kpi-title">Energy Savings vs Baseline</span>
+                        <div class="kpi-icon-pill emerald">🌱</div>
+                    </div>
+                    <div id="kpiEcoSavingsPercent" class="kpi-value" style="color:var(--accent-emerald);">+15.4%</div>
+                    <div class="kpi-subtext">EcoRoute vs Shortest-Distance Path</div>
+                </div>
+
+                <div class="card kpi-card">
+                    <div class="kpi-header">
+                        <span class="kpi-title">Battery Safety Reserve</span>
+                        <div class="kpi-icon-pill amber">🛡️</div>
+                    </div>
+                    <div id="kpiEcoSafetyReserve" class="kpi-value">15.0 EU</div>
+                    <div class="kpi-subtext">Minimum buffer enforced for assignments</div>
+                </div>
+            </div>
+
+            <!-- EcoRoute Config Card & Toolbar -->
+            <div class="card form-card" style="margin-bottom:20px;padding:18px 22px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border-subtle);">
+                    <!-- Robot Profile & Payload -->
+                    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <label style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Robot Model:</label>
+                            <select id="ecoRobotTypeSelect" class="form-input" style="padding:6px 12px;font-size:13px;font-weight:600;min-width:160px;">
+                                <option value="PickerRobot" selected>PickerRobot (0.5 EU/step, max 6 items)</option>
+                                <option value="TransportRobot">TransportRobot (0.9 EU/step, max 25 items)</option>
+                                <option value="HybridRobot">HybridRobot (0.7 EU/step, max 12 items)</option>
+                            </select>
+                        </div>
+
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <label style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;">Payload:</label>
+                            <input id="ecoPayloadInput" type="number" class="form-input" value="0" min="0" max="25" style="width:65px;padding:6px 8px;font-size:13px;text-align:center;">
+                            <span style="font-size:12px;color:var(--text-secondary);">items</span>
+                        </div>
+                    </div>
+
+                    <!-- Grid Friction Tools -->
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <span style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-right:4px;">Terrain Tools:</span>
+                        <button id="btnEcoToolSetStart" class="btn btn-outline" style="padding:6px 12px;font-size:12px;font-weight:600;" title="Click cell on grid to set Start">
+                            🎯 Pick Start
+                        </button>
+                        <button id="btnEcoToolSetGoal" class="btn btn-outline" style="padding:6px 12px;font-size:12px;font-weight:600;" title="Click cell on grid to set Goal">
+                            🏁 Pick Goal
+                        </button>
+                        <button id="btnEcoToggleFriction" class="btn btn-outline" style="padding:6px 12px;font-size:12px;color:var(--accent-amber);" title="Click cells to cycle high-friction terrain weights">
+                            ⚡ Cycle Friction
+                        </button>
+                        <button id="btnEcoClearFriction" class="btn btn-outline" style="padding:6px 12px;font-size:12px;color:var(--accent-rose);" title="Clear all custom terrain weights">
+                            🧹 Clear Friction
+                        </button>
+                        <button id="btnEcoResetDefaults" class="btn btn-outline" style="padding:6px 12px;font-size:12px;" title="Reset coordinates and friction to defaults">
+                            ↺ Reset Grid
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Coordinates & Action Buttons -->
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+                    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <label style="font-size:12px;font-weight:600;color:var(--text-secondary);">Start (X, Y):</label>
+                            <input id="ecoStartX" type="number" class="form-input" value="0" min="0" max="14" style="width:58px;padding:6px 8px;font-size:13px;text-align:center;">
+                            <input id="ecoStartY" type="number" class="form-input" value="0" min="0" max="14" style="width:58px;padding:6px 8px;font-size:13px;text-align:center;">
+                        </div>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <label style="font-size:12px;font-weight:600;color:var(--text-secondary);">Goal (X, Y):</label>
+                            <input id="ecoGoalX" type="number" class="form-input" value="14" min="0" max="14" style="width:58px;padding:6px 8px;font-size:13px;text-align:center;">
+                            <input id="ecoGoalY" type="number" class="form-input" value="14" min="0" max="14" style="width:58px;padding:6px 8px;font-size:13px;text-align:center;">
+                        </div>
+                    </div>
+
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                        <button id="btnEcoCalculate" class="btn btn-primary" style="padding:8px 18px;font-size:13px;font-weight:700;">
+                            🌱 Calculate EcoRoute
+                        </button>
+                        <button id="btnEcoCompareRoutes" class="btn btn-secondary" style="padding:8px 16px;font-size:13px;font-weight:600;" title="Compare baseline vs EcoRoute">
+                            ⚡ Compare Routes
+                        </button>
+                        <button id="btnEcoAnimateRoute" class="btn btn-secondary" style="padding:8px 14px;font-size:13px;" title="Animate robot traversal along EcoRoute">
+                            ▶️ Animate Path
+                        </button>
+                        <button id="btnEcoResetAnim" class="btn btn-outline" style="padding:8px 14px;font-size:13px;" title="Reset path animation">
+                            🔄 Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main EcoRoute Workspace: Canvas on Left, Comparison & Telemetry on Right -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+                <!-- Left: Canvas Card -->
+                <div class="card canvas-card" style="padding:16px;">
+                    <div class="card-title-bar" style="margin-bottom:12px;">
+                        <h3 class="card-title" style="font-size:15px;">
+                            <span>🗺️</span> Energy-Aware Warehouse Grid Map
+                        </h3>
+                        <div style="display:flex;gap:12px;font-size:11px;font-family:var(--font-mono);align-items:center;">
+                            <span style="color:#06b6d4;">--- Shortest Baseline</span>
+                            <span style="color:#10b981;">━━ EcoRoute Optimal</span>
+                            <span style="color:#f59e0b;">■ High Friction</span>
+                        </div>
+                    </div>
+
+                    <div style="position:relative;display:flex;justify-content:center;background:var(--bg-canvas);border-radius:var(--radius-md);overflow:hidden;border:1px solid var(--border-subtle);">
+                        <canvas id="ecoCanvas" width="540" height="540"></canvas>
+                        <div id="ecoTooltip" class="canvas-tooltip" style="display:none;position:absolute;pointer-events:none;z-index:100;background:rgba(15,23,42,0.95);border:1px solid var(--border-default);padding:8px 12px;border-radius:var(--radius-sm);box-shadow:var(--shadow-md);"></div>
+                    </div>
+
+                    <!-- Legend & Instructions -->
+                    <div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--text-muted);">
+                        <span>Click grid to pick Start/Goal, or use <strong>Cycle Friction</strong> to place 3x/5x/10x terrain weights.</span>
+                        <span id="ecoCanvasStatus" style="font-family:var(--font-mono);color:var(--accent-emerald);">Ready</span>
+                    </div>
+                </div>
+
+                <!-- Right: Comparison Table & Battery Feasibility Cards -->
+                <div style="display:flex;flex-direction:column;gap:18px;">
+                    <!-- Route Comparison Card -->
+                    <div class="card" style="padding:18px;">
+                        <div class="card-title-bar" style="margin-bottom:14px;">
+                            <h3 class="card-title" style="font-size:15px;">
+                                <span>⚖️</span> Route Comparison: Shortest vs EcoRoute
+                            </h3>
+                            <span id="ecoRouteSavingsBadge" class="status-pill status-ready" style="font-size:12px;font-weight:700;">
+                                0.0% Saved
+                            </span>
+                        </div>
+
+                        <div style="overflow-x:auto;">
+                            <table class="data-table" style="width:100%;font-size:12px;">
+                                <thead>
+                                    <tr>
+                                        <th>Evaluation Metric</th>
+                                        <th style="color:#06b6d4;">Shortest Baseline</th>
+                                        <th style="color:#10b981;">EcoRoute (Optimal)</th>
+                                        <th>Optimization Delta</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="font-weight:600;">Distance (Hop Count)</td>
+                                        <td id="compShortestDist" style="font-family:var(--font-mono);">-</td>
+                                        <td id="compEcoDist" style="font-family:var(--font-mono);font-weight:700;color:#10b981;">-</td>
+                                        <td id="compDeltaDist" style="font-family:var(--font-mono);">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight:600;">Estimated Energy (EU)</td>
+                                        <td id="compShortestEnergy" style="font-family:var(--font-mono);">-</td>
+                                        <td id="compEcoEnergy" style="font-family:var(--font-mono);font-weight:700;color:#10b981;">-</td>
+                                        <td id="compDeltaEnergy" style="font-family:var(--font-mono);font-weight:700;color:var(--accent-emerald);">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight:600;">Energy Savings (%)</td>
+                                        <td style="color:var(--text-muted);">0.0% (Baseline)</td>
+                                        <td id="compEcoSavingsPercent" style="font-family:var(--font-mono);font-weight:700;color:var(--accent-emerald);">-</td>
+                                        <td id="compSavingsSummary" style="font-weight:600;">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight:600;">Nodes Explored</td>
+                                        <td id="compShortestNodes" style="font-family:var(--font-mono);">-</td>
+                                        <td id="compEcoNodes" style="font-family:var(--font-mono);">-</td>
+                                        <td id="compDeltaNodes" style="font-family:var(--font-mono);">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight:600;">Execution Time (μs)</td>
+                                        <td id="compShortestTime" style="font-family:var(--font-mono);">-</td>
+                                        <td id="compEcoTime" style="font-family:var(--font-mono);">-</td>
+                                        <td id="compDeltaTime" style="font-family:var(--font-mono);">-</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Tradeoff analysis text -->
+                        <div id="ecoTradeoffSummary" style="margin-top:12px;font-size:12px;color:var(--text-secondary);line-height:1.6;background:var(--bg-card-subtle);padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);">
+                            Select start and destination coordinates to evaluate the energy tradeoff between minimal distance and lowest cumulative friction.
+                        </div>
+                    </div>
+
+                    <!-- Fleet Battery Feasibility & Smart Charging Card -->
+                    <div class="card" style="padding:18px;">
+                        <div class="card-title-bar" style="margin-bottom:14px;">
+                            <h3 class="card-title" style="font-size:15px;">
+                                <span>🔋</span> Fleet Battery Feasibility &amp; Charging Advisory
+                            </h3>
+                            <span id="ecoFeasibilityBadge" class="status-pill status-ready" style="font-size:12px;font-weight:700;">
+                                Feasibility Checked
+                            </span>
+                        </div>
+
+                        <!-- 4-Leg Feasibility Trip Calculation Breakdown -->
+                        <div style="background:var(--bg-card-subtle);padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);margin-bottom:14px;">
+                            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;">4-Leg Trip Battery Feasibility Model:</div>
+                            <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:8px;font-size:11px;text-align:center;">
+                                <div style="background:var(--bg-card);padding:6px;border-radius:4px;border:1px solid var(--border-subtle);">
+                                    <div style="color:var(--text-muted);margin-bottom:2px;">1. Pickup Leg</div>
+                                    <div id="feasPickupEnergy" style="font-weight:700;color:var(--text-primary);font-family:var(--font-mono);">0.0 EU</div>
+                                </div>
+                                <div style="background:var(--bg-card);padding:6px;border-radius:4px;border:1px solid var(--border-subtle);">
+                                    <div style="color:var(--text-muted);margin-bottom:2px;">2. Delivery Leg</div>
+                                    <div id="feasDeliveryEnergy" style="font-weight:700;color:var(--text-primary);font-family:var(--font-mono);">0.0 EU</div>
+                                </div>
+                                <div style="background:var(--bg-card);padding:6px;border-radius:4px;border:1px solid var(--border-subtle);">
+                                    <div style="color:var(--text-muted);margin-bottom:2px;">3. Charging Leg</div>
+                                    <div id="feasChargingEnergy" style="font-weight:700;color:var(--text-primary);font-family:var(--font-mono);">0.0 EU</div>
+                                </div>
+                                <div style="background:var(--bg-card);padding:6px;border-radius:4px;border:1px solid var(--border-subtle);">
+                                    <div style="color:var(--text-muted);margin-bottom:2px;">4. Reserve Buffer</div>
+                                    <div id="feasReserveEnergy" style="font-weight:700;color:var(--accent-amber);font-family:var(--font-mono);">15.0 EU</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Live Fleet Battery Bars -->
+                        <div id="ecoRobotCardsContainer" style="display:flex;flex-direction:column;gap:8px;">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dedicated FoodSaver View: Near-Expiry Inventory & Food Donation Optimization -->
+        <section id="viewFoodSaver" class="app-view">
+            <div class="view-header">
+                <div class="view-header-title">
+                    <h2><span>🥫</span> FoodSaver: Near-Expiry Inventory &amp; Food Donation Optimization</h2>
+                    <p>Dynamic shelf-life risk analysis, First-Expired-First-Out (FEFO) order allocation, zero-waste food donation state machine, and autonomous robot staging to PK02.</p>
+                </div>
+                <div class="view-header-actions" style="display:flex;gap:10px;align-items:center;">
+                    <button id="btnExportFoodSaverJson" class="btn btn-secondary" style="font-weight:600;padding:8px 14px;font-size:12px;">
+                        📥 Export JSON Report
+                    </button>
+                    <button id="btnExportFoodSaverCsv" class="btn btn-secondary" style="font-weight:600;padding:8px 14px;font-size:12px;">
+                        📊 Export CSV Report
+                    </button>
+                    <button id="btnOpenNewDonationModal" class="btn btn-primary" style="font-weight:700;padding:8px 16px;font-size:12px;">
+                        🎁 New Donation Request
+                    </button>
+                </div>
+            </div>
+
+            <!-- FoodSaver Live KPI Metrics Grid -->
+            <div class="kpi-grid" style="margin-bottom:20px;">
+                <div class="card kpi-card">
+                    <div class="kpi-header">
+                        <span class="kpi-title">Total Food Stock</span>
+                        <div class="kpi-icon-pill green">🥫</div>
+                    </div>
+                    <div id="kpiFoodTotalQuantity" class="kpi-value">0 units</div>
+                    <div class="kpi-subtext">Active food batches in warehouse</div>
+                </div>
+
+                <div class="card kpi-card">
+                    <div class="kpi-header">
+                        <span class="kpi-title">Near-Expiry &amp; Critical</span>
+                        <div class="kpi-icon-pill amber">⏳</div>
+                    </div>
+                    <div id="kpiFoodNearExpiryCount" class="kpi-value">0 units</div>
+                    <div class="kpi-subtext">Remaining shelf life ≤ 7 days</div>
+                </div>
+
+                <div class="card kpi-card">
+                    <div class="kpi-header">
+                        <span class="kpi-title">Food Saved &amp; Donated</span>
+                        <div class="kpi-icon-pill emerald">🌱</div>
+                    </div>
+                    <div id="kpiFoodSavedQuantity" class="kpi-value" style="color:var(--accent-emerald);">0 units</div>
+                    <div class="kpi-subtext">Diverted from waste to communities</div>
+                </div>
+
+                <div class="card kpi-card">
+                    <div class="kpi-header">
+                        <span class="kpi-title">FEFO Dispatch Compliance</span>
+                        <div class="kpi-icon-pill blue">⚡</div>
+                    </div>
+                    <div id="kpiFoodFefoRate" class="kpi-value">100.0%</div>
+                    <div class="kpi-subtext">First-Expired-First-Out rate</div>
+                </div>
+            </div>
+
+            <!-- Two-Column Primary Workspace -->
+            <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:20px;align-items:start;">
+
+                <!-- Left Column: Expiry Risk Monitoring Table & FEFO Allocation -->
+                <div style="display:flex;flex-direction:column;gap:20px;">
+                    <!-- Expiry Monitoring Table Card -->
+                    <div class="card" style="padding:20px;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+                            <div>
+                                <h3 style="font-size:15px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
+                                    <span>🔍</span> Batch Expiry Risk Monitor
+                                </h3>
+                                <p style="font-size:12px;color:var(--text-muted);margin-top:2px;">Dynamic mathematical risk scoring (0-100) and shelf-life classification.</p>
+                            </div>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <label style="font-size:12px;color:var(--text-muted);font-weight:600;">Filter:</label>
+                                <select id="foodSaverExpiryFilter" class="form-input" style="padding:4px 8px;font-size:12px;font-weight:600;">
+                                    <option value="ALL" selected>All Batches</option>
+                                    <option value="CRITICAL">Critical (≤ 3 days)</option>
+                                    <option value="NEAR_EXPIRY">Near Expiry (4-7 days)</option>
+                                    <option value="SAFE">Safe (> 7 days)</option>
+                                    <option value="EXPIRED">Expired (≤ 0 days)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive" style="max-height:340px;overflow-y:auto;">
+                            <table class="data-table" id="tableFoodBatches" style="width:100%;font-size:12px;">
+                                <thead>
+                                    <tr>
+                                        <th>Batch</th>
+                                        <th>Product</th>
+                                        <th>Category</th>
+                                        <th>Location</th>
+                                        <th>Expiry</th>
+                                        <th>Days Left</th>
+                                        <th>Risk</th>
+                                        <th>Status</th>
+                                        <th>Available</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="foodBatchesTbody">
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- FEFO Dispatch Queue Card -->
+                    <div class="card" style="padding:20px;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                            <div>
+                                <h3 style="font-size:15px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
+                                    <span>📋</span> FEFO Order Priority Queue
+                                </h3>
+                                <p style="font-size:12px;color:var(--text-muted);margin-top:2px;">Automated order dispatch strictly consumes earliest-expiring active batches first.</p>
+                            </div>
+                            <span class="badge badge-info" style="font-size:11px;">Deterministic FEFO</span>
+                        </div>
+                        <div id="foodFefoQueueContainer" style="display:flex;flex-direction:column;gap:8px;">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Donation Management & Lifecycle Panel -->
+                <div style="display:flex;flex-direction:column;gap:20px;">
+                    <!-- Donation Management Table Card -->
+                    <div class="card" style="padding:20px;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                            <div>
+                                <h3 style="font-size:15px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
+                                    <span>🤝</span> Food Donation Management
+                                </h3>
+                                <p style="font-size:12px;color:var(--text-muted);margin-top:2px;">Finite State Machine lifecycle with atomic inventory reservations &amp; robot staging.</p>
+                            </div>
+                            <button id="btnRefreshDonations" class="btn btn-secondary" style="font-size:11px;padding:4px 10px;">
+                                🔄 Refresh
+                            </button>
+                        </div>
+
+                        <div id="foodDonationsContainer" style="display:flex;flex-direction:column;gap:12px;max-height:480px;overflow-y:auto;">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Impact & Sustainability Metrics Card -->
+                    <div class="card" style="padding:20px;">
+                        <h3 style="font-size:15px;font-weight:700;color:var(--text-primary);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+                            <span>🌍</span> Sustainability &amp; Waste Diversion
+                        </h3>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                            <div style="background:var(--bg-subtle, rgba(255,255,255,0.03));padding:12px;border-radius:8px;border:1px solid var(--border-subtle);">
+                                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Completed Donations</div>
+                                <div id="statCompletedDonations" style="font-size:18px;font-weight:800;color:var(--accent-emerald);margin-top:4px;">0 units</div>
+                            </div>
+                            <div style="background:var(--bg-subtle, rgba(255,255,255,0.03));padding:12px;border-radius:8px;border:1px solid var(--border-subtle);">
+                                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Disposed Waste</div>
+                                <div id="statDisposedWaste" style="font-size:18px;font-weight:800;color:#ef4444;margin-top:4px;">0 units</div>
+                            </div>
+                            <div style="background:var(--bg-subtle, rgba(255,255,255,0.03));padding:12px;border-radius:8px;border:1px solid var(--border-subtle);">
+                                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Reserved for Pickup</div>
+                                <div id="statReservedDonation" style="font-size:18px;font-weight:800;color:#3b82f6;margin-top:4px;">0 units</div>
+                            </div>
+                            <div style="background:var(--bg-subtle, rgba(255,255,255,0.03));padding:12px;border-radius:8px;border:1px solid var(--border-subtle);">
+                                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:700;">Donation Completion Rate</div>
+                                <div id="statDonationRate" style="font-size:18px;font-weight:800;color:var(--text-primary);margin-top:4px;">100.0%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Robot Telemetry Inspector Modal -->
+    <div id="robotDetailsModal" class="modal-backdrop">
+        <div class="modal-container">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <div id="modalRobotAvatar" class="robot-avatar picker">🤖</div>
+                    <div>
+                        <h3 id="modalRobotName" style="font-size:16px;font-weight:700;color:var(--text-primary);">Robot Telemetry</h3>
+                        <span id="modalRobotSubtext" style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);">R01 &bull; PickerRobot</span>
+                    </div>
+                </div>
+                <button id="btnModalClose" class="modal-close-btn" title="Close Inspector">&times;</button>
+            </div>
+            <div id="modalRobotBody" class="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Canonical Pathfinding Benchmark Suite Modal -->
+    <div id="benchmarkSuiteModal" class="modal-backdrop">
+        <div class="modal-container" style="max-width:920px;">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <div class="robot-avatar" style="background:#e0e7ff;color:#4338ca;">⚡</div>
+                    <div>
+                        <h3 style="font-size:16px;font-weight:700;color:var(--text-primary);">Pathfinding &amp; Multi-Robot Benchmark Suite</h3>
+                        <span id="benchmarkSuiteSubtext" style="font-size:12px;color:var(--text-muted);font-family:var(--font-mono);">Authoritative Native C++ Engine &bull; BFS vs Dijkstra vs A* vs Space-Time A*</span>
+                    </div>
+                </div>
+                <button id="btnBenchmarkModalClose" class="modal-close-btn" title="Close Benchmark">&times;</button>
+            </div>
+            <div style="padding:16px 20px 0 20px;">
+                <!-- Benchmark Configuration Controls Bar -->
+                <div class="benchmark-config-toolbar">
+                    <div class="benchmark-config-grid">
+                        <div>
+                            <label for="benchmarkScenarioSelect" class="benchmark-toolbar-label">Benchmark Scenario</label>
+                            <select id="benchmarkScenarioSelect" class="form-select" style="width:100%;font-size:13px;padding:6px 10px;">
+                                <option value="all">⚡ All Canonical Scenarios (5 Scenarios)</option>
+                                <option value="open_grid">A. Open Grid (Minimal Obstacles)</option>
+                                <option value="obstacle_rich">B. Obstacle-Rich Grid (Dense Shelves)</option>
+                                <option value="narrow_corridor">C. Narrow Corridor (Constrained Bottlenecks)</option>
+                                <option value="long_distance">D. Long-Distance Route (Expanded Search)</option>
+                                <option value="congested_multi_robot">E. Congested Multi-Robot Coordination</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="benchmarkRepetitionsSelect" class="benchmark-toolbar-label">Repetitions</label>
+                            <select id="benchmarkRepetitionsSelect" class="form-select" style="width:100%;font-size:13px;padding:6px 10px;">
+                                <option value="1">1x (Single Run)</option>
+                                <option value="5" selected>5x (Median &amp; Min/Max)</option>
+                                <option value="10">10x (High Precision)</option>
+                                <option value="20">20x (Stress Test)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="benchmark-toolbar-label">Algorithms Evaluated</label>
+                            <div class="benchmark-algo-checkboxes">
+                                <label><input type="checkbox" id="chkAlgoBFS" checked> BFS</label>
+                                <label><input type="checkbox" id="chkAlgoDijkstra" checked> Dijkstra</label>
+                                <label><input type="checkbox" id="chkAlgoAStar" checked> A*</label>
+                                <label><input type="checkbox" id="chkAlgoSTAStar" checked> Space-Time A*</label>
+                            </div>
+                        </div>
+                        <div>
+                            <button id="btnExecuteBenchmark" class="btn btn-primary" style="padding:8px 16px;font-size:13px;font-weight:700;white-space:nowrap;">
+                                ⚡ Run Benchmark
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="benchmarkSuiteBody" class="modal-body" style="padding:0 20px 20px 20px;overflow-y:auto;max-height:calc(85vh - 150px);"></div>
+        </div>
+    </div>
+
+    <!-- New Food Donation Request Modal -->
+    <div id="newDonationModal" class="modal-backdrop">
+        <div class="modal-container" style="max-width:540px;">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <div class="robot-avatar" style="background:#dcfce7;color:#15803d;">🎁</div>
+                    <div>
+                        <h3 style="font-size:16px;font-weight:700;color:var(--text-primary);">Create Food Donation Request</h3>
+                        <span style="font-size:12px;color:var(--text-muted);">Stage eligible near-expiry batches to Staging Station PK02</span>
+                    </div>
+                </div>
+                <button id="btnDonationModalClose" class="modal-close-btn">&times;</button>
+            </div>
+            <div style="padding:20px;">
+                <div style="display:flex;flex-direction:column;gap:14px;">
+                    <div>
+                        <label style="font-size:12px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px;">Recipient Organization</label>
+                        <input id="inputDonationRecipient" type="text" class="form-input" placeholder="e.g., Downtown Food Shelter" value="Downtown Community Food Bank" style="width:100%;font-size:13px;padding:8px 12px;">
+                    </div>
+                    <div>
+                        <label style="font-size:12px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px;">Contact Person / Phone</label>
+                        <input id="inputDonationContact" type="text" class="form-input" placeholder="e.g., Sarah Jenkins (555-0192)" value="Sarah Jenkins (555-0192)" style="width:100%;font-size:13px;padding:8px 12px;">
+                    </div>
+                    <div>
+                        <label style="font-size:12px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px;">Eligible Food Batch</label>
+                        <select id="selectDonationBatch" class="form-input" style="width:100%;font-size:13px;padding:8px 12px;font-weight:600;">
+                            <!-- Populated with eligible batches -->
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:12px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px;">Donation Quantity (units)</label>
+                        <input id="inputDonationQty" type="number" min="1" max="100" value="5" class="form-input" style="width:100%;font-size:13px;padding:8px 12px;">
+                    </div>
+                    <div>
+                        <label style="font-size:12px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:4px;">Notes / Special Handling</label>
+                        <input id="inputDonationNotes" type="text" class="form-input" placeholder="e.g., Immediate refrigeration required" value="Refrigerated transit required" style="width:100%;font-size:13px;padding:8px 12px;">
+                    </div>
+                    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:10px;">
+                        <button id="btnCancelDonationModal" class="btn btn-secondary" style="font-size:12px;padding:8px 16px;">Cancel</button>
+                        <button id="btnSubmitDonationRequest" class="btn btn-primary" style="font-size:12px;font-weight:700;padding:8px 18px;">Submit Request</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script imports -->
+    <script src="js/api.js?v=16"></script>
+    <script src="js/warehouse_canvas.js?v=16"></script>
+    <script src="js/algo_canvas.js?v=16"></script>
+    <script src="js/eco_canvas.js?v=16"></script>
+    <script src="js/app.js?v=16"></script>
+</body>
+</html>

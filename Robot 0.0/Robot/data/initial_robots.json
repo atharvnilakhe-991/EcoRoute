@@ -1,0 +1,6 @@
+[
+  { "id": "R01", "name": "SpeedyPicker-1", "type": "PickerRobot", "capacity": 6, "position": { "x": 0, "y": 3 }, "battery": 100.0 },
+  { "id": "R02", "name": "SpeedyPicker-2", "type": "PickerRobot", "capacity": 6, "position": { "x": 0, "y": 5 }, "battery": 100.0 },
+  { "id": "R03", "name": "TitanHauler-1", "type": "TransportRobot", "capacity": 25, "position": { "x": 1, "y": 0 }, "battery": 100.0 },
+  { "id": "R04", "name": "OmniBot-1", "type": "HybridRobot", "capacity": 12, "position": { "x": 1, "y": 14 }, "battery": 100.0 }
+]
